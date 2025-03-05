@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+#MariaDB Container
+  glpidb:
+    image: mariadb:10.5
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    restart: always
+    networks:
+      - glpi-net
+    env_file:
+      - .env
+
+#GLPI Container
+  glpi:
+    image: diouxx/glpi
+    ports:
+      - "80:80"
+    working_dir: "/var/www/html/glpi"
+    volumes:
+      - glpi_data:/var/www/html/glpi
+    environment:
+      - TIMEZONE=America/Sao_Paulo
+      - GLPI_DB_HOST=glpidb
+      - GLPI_DB_NAME=${DB_NAME}
+      - GLPI_DB_USER=${DB_USER}
+      - GLPI_DB_PASSWORD=${DB_PASSWORD}
+    restart: always
+    networks:
+      - glpi-net
+    env_file:
+      - .env
+
+volumes:
+  glpi_data:
+  db_data:
+
+networks:
+  glpi-net:
