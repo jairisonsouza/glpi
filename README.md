@@ -150,7 +150,7 @@ docker network create --driver overlay glpi-net --attachable
 docker stack deploy -c docker/docker-compose-traefik.yml traefik
 ```
 
-Ajuste o arquivo `docker-compose.yml` localizado em `docker/docker-compose-swarm.yml`:
+Ajuste o arquivo `docker-compose-swarm.yml` localizado em `docker/docker-compose-swarm.yml`:
 
 * Altere os campos comentados com `#`:
 
@@ -196,7 +196,7 @@ services:
       - GLPI_DB_USER=${DB_USER}
       - GLPI_DB_PASSWORD=${DB_PASSWORD}
     volumes:
-      - ../:/var/www/html/glpi
+      - glpi_data:/var/www/html/glpi
     deploy:
       replicas: 1
       restart_policy:
@@ -213,6 +213,7 @@ services:
       - ../.env
 
 volumes:
+  glpi_data:
   db_data:
 
 networks:
