@@ -266,11 +266,6 @@ kubectl create secret generic glpi-db-secret \
   --from-literal=MYSQL_PASSWORD="sua_senha"
 ```
 
-Aplique o manifesto do banco de dados:
-```
-kubectl apply -f k8s/glpi-db.yaml
-```
-
 ### Implantando o GLPI
 
 Crie um Secret para armazenar credenciais do GLPI:
@@ -284,7 +279,7 @@ kubectl create secret generic glpi-app-secret \
 
 Aplique o manifesto do GLPI:
 ```
-kubectl apply -f k8s/glpi-app.yaml
+kubectl apply -f glpi-app.yaml
 ```
 
 ### Verificando a instalação
