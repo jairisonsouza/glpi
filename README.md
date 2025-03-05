@@ -117,6 +117,126 @@ networks:
 
 # AMBIENTE DE PRODUÇÃO:
 
+## KUBERNETES: 
+
+# Instalação com Docker
+
+# AMBIENTE LOCAL:
+
+## Pré-requisitos:
+
+## LINUX (DEBIAN/UBUNTU):
+* Git
+```
+sudo apt install git -y
+```
+* Docker
+```
+sudo apt install docker.io -y
+```
+* Docker-compose
+```
+sudo apt install docker-compose -y
+```
+
+## WINDOWS:
+* Faça download do Git no site oficial: https://git-scm.com/downloads
+* Faça download do Docker no site oficial: https://www.docker.com/products/docker-desktop/
+
+## Clonando o projeto:
+```
+git clone https://github.com/jairisonsouza/glpi.git
+```
+
+## Executando:
+
+Renomeie o arquivo `.env.sample` para `.env` e crie as credenciais para o banco de dados:
+```
+DB_DATABASE=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+```
+
+Feito isso, basta rodar o comando dentro da pasta raiz do projeto:
+```
+docker-compose up -d
+```
+
+Isso pode demorar um pouco. Aguarde alguns minutos...
+
+Pronto!
+
+## Credenciais:
+
+* Usuário: glpi
+* Senha: glpi
+
+## Acesso
+* Acesse o GLPI em `http://localhost`
+* Para acessar o banco de dados, utilize uma ferramenta compatível com Mysql/MariaDB, como MySQL Workbench, DBeaver, phpMyAdmin, ou similar com as credenciais do arquivo `.env`:
+```
+HOST=localhost
+DB_NAME=glpi
+DB_USER=glpi
+DB_PASSWORD=sua_senha
+DB_PORT=3306
+```
+
+# AMBIENTE DE PRODUÇÃO:
+
+## Instalação com Kubernetes
+
+### Pré-requisitos:
+- Um cluster Kubernetes funcional
+- Helm instalado
+- Kubectl configurado
+- Longhorn instalado para armazenamento persistente (opcional, mas recomendado)
+- Traefik como Ingress Controller (ou outro Ingress configurado)
+
+### Implantando o Banco de Dados
+
+Crie um Secret para armazenar as credenciais do banco de dados:
+```
+kubectl create secret generic glpi-db-secret \
+  --from-literal=MYSQL_ROOT_PASSWORD="sua_senha_root" \
+  --from-literal=MYSQL_DATABASE="glpi" \
+  --from-literal=MYSQL_USER="glpi" \
+  --from-literal=MYSQL_PASSWORD="sua_senha"
+```
+
+Aplique o manifesto do banco de dados:
+```
+kubectl apply -f k8s/glpi-db.yaml
+```
+
+### Implantando o GLPI
+
+Crie um Secret para armazenar credenciais do GLPI:
+```
+kubectl create secret generic glpi-app-secret \
+  --from-literal=GLPI_DB_HOST="glpi-db-service" \
+  --from-literal=GLPI_DB_NAME="glpi" \
+  --from-literal=GLPI_DB_USER="glpi" \
+  --from-literal=GLPI_DB_PASSWORD="sua_senha"
+```
+
+Aplique o manifesto do GLPI:
+```
+kubectl apply -f k8s/glpi-app.yaml
+```
+
+### Verificando a instalação
+
+Verifique se os pods estão rodando corretamente:
+```
+kubectl get pods -n glpi
+```
+
+Acesse a aplicação em `https://glpi.seudominio.com`
+
+## DOCKER SWARM:
+
 ## Pré requisitos:
 
 ## LINUX (DEBIAN/UBUNTU):

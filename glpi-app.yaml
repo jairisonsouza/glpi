@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: glpi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: glpi-data-pvc
+  namespace: glpi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: longhorn
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: glpi-db-pvc
+  namespace: glpi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: longhorn
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: glpi
+  namespace: glpi
+  labels:
+    app: glpi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glpi
+  template:
+    metadata:
+      labels:
+        app: glpi
+      annotations:
+        traefik.enable: "true"
+        traefik.http.routers.glpi.rule: "Host(`glpi.seudominio.com`)"
+        traefik.http.routers.glpi.entrypoints: "websecure"
+        traefik.http.routers.glpi.tls.certresolver: "myresolver"
+        traefik.http.services.glpi.loadbalancer.server.port: "80"
+    spec:
+      containers:
+        - name: glpi
+          image: diouxx/glpi
+          ports:
+            - containerPort: 80
+          env:
+            - name: TIMEZONE
+              value: America/Sao_Paulo
+            - name: GLPI_DB_HOST
+              value: glpi-db
+            - name: GLPI_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_NAME
+            - name: GLPI_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_USER
+            - name: GLPI_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - mountPath: /var/www/html/glpi
+              name: glpi-data
+      volumes:
+        - name: glpi-data
+          persistentVolumeClaim:
+            claimName: glpi-data-pvc
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: glpi-db
+  namespace: glpi
+spec:
+  serviceName: glpi-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glpi-db
+  template:
+    metadata:
+      labels:
+        app: glpi-db
+      annotations:
+        traefik.enable: "false"
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:10.5
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_NAME
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: glpi-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: glpi-db-data
+      volumes:
+        - name: glpi-db-data
+          persistentVolumeClaim:
+            claimName: glpi-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glpi
+  namespace: glpi
+spec:
+  selector:
+    app: glpi
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glpi-db
+  namespace: glpi
+spec:
+  selector:
+    app: glpi-db
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  clusterIP: None
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: glpi-secrets
+  namespace: glpi
+type: Opaque
+data:
+  DB_NAME: REPLACE_WITH_BASE64_ENCODED_DB_NAME
+  DB_USER: REPLACE_WITH_BASE64_ENCODED_DB_USER
+  DB_PASSWORD: REPLACE_WITH_BASE64_ENCODED_DB_PASSWORD
